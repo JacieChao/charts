@@ -1,6 +1,15 @@
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
+  name: calico-crd
+  namespace: kube-system
+spec:
+  bootstrap: true
+  chart: https://jaciechao.github.io/charts/assets/rke2-calico-crd/rke2-calico-crd-v3.29.101.tgz
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
   name: calico
   namespace: kube-system
 spec:
@@ -14,23 +23,26 @@ spec:
       image: calico/ctl
       tag: v3.29.2
     ipamConfig:
-      strictAffinity: false
+      strictAffinity: true
       autoAllocateBlocks: true
     apiServer:
       enabled: false
     defaultFelixConfiguration: 
-      enabled: true
+      enabled: false
+    global:
+      clusterCIDR: 10.42.0.0/16
+      clusterCIDRv4: 10.42.0.0/16
+      clusterDNS: 10.43.0.10
+      clusterDomain: cluster.local
+      rke2DataDir: /var/lib/rancher/rke2
+      serviceCIDR: 10.43.0.0/16
     felixConfiguration:
-      bpfConnectTimeLoadBalancing: TCP
-      bpfEnabled: false
-      bpfHostNetworkedNATWithoutCTLB: Enabled
-      bpfLogLevel: ""
-      floatingIPs: Disabled
+      defaultEndpointToHostAction: Drop
+      featureDetectOverride: ChecksumOffloadBroken=true
       healthPort: 9099
-      logSeverityScreen: Info
-      nftablesMode: Disabled
-      reportingInterval: 0s
-      vxlanVNI: 4096
+      logSeveritySys: Info
+      wireguardEnabled: false
+      xdpEnabled: true
     installation:
       controlPlaneTolerations:
       - key: "node-role.kubernetes.io/control-plane"
@@ -41,44 +53,25 @@ spec:
         effect: "NoExecute"
       enabled: true
       kubeletVolumePluginPath: None
-      kubernetesProvider: "RKE2" # 
+      kubernetesProvider: "RKE2" 
+      backend: VXLAN
+      natOutgoing: Enabled
       calicoNetwork:
         bgp: Disabled
-        hostPorts: Enabled
-        ipPools:
-        - allowedUses:
-          - Workload
-          - Tunnel
-          blockSize: 26
-          cidr: 10.42.0.0/16 # set to your cluster cidr value
-          disableBGPExport: false
-          disableNewAllocations: false
-          encapsulation: VXLAN
-          name: default-ipv4-ippool
-          natOutgoing: Enabled
-          nodeSelector: all()
-        linuxDataplane: Iptables
-        linuxPolicySetupTimeoutSeconds: 0
-        multiInterfaceMode: None
-        nodeAddressAutodetectionV4:
-          firstFound: true
-        windowsDataplane: Disabled
-      cni:
-        ipam:
-          type: Calico
-        type: Calico
       imagePath: "calico"
       imagePrefix: ""
       flexVolumePath: /var/lib/kubelet/volumeplugins/
-      logging:
-        cni:
-          logFileMaxAgeDays: 30
-          logFileMaxCount: 10
-          logFileMaxSize: 100Mi
-          logSeverity: Info
-      nodeUpdateStrategy:
-        rollingUpdate:
-          maxUnavailable: 1
-        type: RollingUpdate
-      nonPrivileged: Disabled
-      variant: Calico
+      tolerations:
+      - effect: NoExecute
+        operator: Exists
+      - effect: NoSchedule
+        operator: Exists
+    kubeletVolumePluginPath: None
+    kubernetesServiceEndpoint:
+      host: ''
+      port: '6443'
+    tolerations:
+    - effect: NoExecute
+      operator: Exists
+    - effect: NoSchedule
+      operator: Exists

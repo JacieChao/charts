@@ -1,8 +1,0 @@
-apiVersion: helm.cattle.io/v1
-kind: HelmChart
-metadata:
-  name: calico-crd
-  namespace: kube-system
-spec:
-  bootstrap: true
-  chart: https://jaciechao.github.io/charts/assets/rke2-calico-crd/rke2-calico-crd-v3.29.101.tgz

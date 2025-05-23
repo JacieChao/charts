@@ -1,0 +1,84 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: calico
+  namespace: kube-system
+spec:
+  bootstrap: true
+  chart: https://jaciechao.github.io/charts/assets/rke2-calico/rke2-calico-v3.29.200.tgz
+  valuesContent: |-
+    tigeraOperator:
+      image: tigera/operator
+      version: v1.36.5
+    calicoctl:
+      image: calico/ctl
+      tag: v3.29.2
+    ipamConfig:
+      strictAffinity: false
+      autoAllocateBlocks: true
+    apiServer:
+      enabled: false
+    defaultFelixConfiguration: 
+      enabled: true
+    felixConfiguration:
+      bpfConnectTimeLoadBalancing: TCP
+      bpfEnabled: false
+      bpfHostNetworkedNATWithoutCTLB: Enabled
+      bpfLogLevel: ""
+      floatingIPs: Disabled
+      healthPort: 9099
+      logSeverityScreen: Info
+      nftablesMode: Disabled
+      reportingInterval: 0s
+      vxlanVNI: 4096
+    installation:
+      controlPlaneTolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node-role.kubernetes.io/etcd"
+        operator: "Exists"
+        effect: "NoExecute"
+      enabled: true
+      kubeletVolumePluginPath: None
+      kubernetesProvider: "RKE2" # 
+      calicoNetwork:
+        bgp: Disabled
+        hostPorts: Enabled
+        ipPools:
+        - allowedUses:
+          - Workload
+          - Tunnel
+          blockSize: 26
+          cidr: 10.42.0.0/16 # set to your cluster cidr value
+          disableBGPExport: false
+          disableNewAllocations: false
+          encapsulation: VXLAN
+          name: default-ipv4-ippool
+          natOutgoing: Enabled
+          nodeSelector: all()
+        linuxDataplane: Iptables
+        linuxPolicySetupTimeoutSeconds: 0
+        multiInterfaceMode: None
+        nodeAddressAutodetectionV4:
+          firstFound: true
+        windowsDataplane: Disabled
+      cni:
+        ipam:
+          type: Calico
+        type: Calico
+      imagePath: "calico"
+      imagePrefix: ""
+      flexVolumePath: /var/lib/kubelet/volumeplugins/
+      logging:
+        cni:
+          logFileMaxAgeDays: 30
+          logFileMaxCount: 10
+          logFileMaxSize: 100Mi
+          logSeverity: Info
+      nodeUpdateStrategy:
+        rollingUpdate:
+          maxUnavailable: 1
+        type: RollingUpdate
+      nonPrivileged: Disabled
+      variant: Calico
